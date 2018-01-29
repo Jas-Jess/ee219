@@ -42,42 +42,47 @@ for category in categories_20:
 # Tokenize each document into words
 # Gets rid of stop words, and stemmed version of word
 # Ignores words appearing in less then 2 documents
-vectorizer = CountVectorizer(min_df=2, stop_words= stop_words, tokenizer=LemmaTokenizer() )
+vectorizer = CountVectorizer(min_df=5, stop_words= stop_words, tokenizer=LemmaTokenizer() )
 X_train_counts = vectorizer.fit_transform(twenty_train_per_category)
 
 ######################
 ###### TF-ICF ########
 ######################
+def calculate_tficf():
+	# Get sizing for variables
+	max_term_freq = [0]*X_train_counts.shape[0] #Maximum term frequency per category
+	cat_count = [0]*X_train_counts.shape[1] # Category count per term
 
-# Get sizing for variables
-max_term_freq = [0]*X_train_counts.shape[0] #Maximum term frequency per category
-cat_count = [0]*vectorized_newsgroups_train.shape[1] # Category count per term
+	# get each max freq in each of the twenty categories
+	for i in xrange(0, X_train_counts.shape[0], 1):
+		max_term_freq[i] = np.amax(X_train_counts[i,:])
 
-# get each max freq in each of the twenty categories
-for i in range(0, X_train_counts[0], 1):
-	max_term_freq[i] = np.amax(X_train_counts[i,:])
+	# counts the number of terms 
+	for i in xrange(0, X_train_counts.shape[1], 1):
+		for j in range(0, X_train_counts.shape[0], 1):
+			if X_train_counts[j,i] != 0:
+				cat_count[i] += 1
+			# Else cat_count += 0
 
-# counts the number of terms 
-for i in range(0, X_train_counts[1], 1):
-	for j in range(0, X_train_counts[0], 1):
-		if X_train_counts[j,i] != 0:
-			cat_count[i] += 1;
-		# Else cat_count += 0
+	print len(vectorizer.get_feature_names())
+	print X_train_counts.shape[1]
 
-# Preallocate tf_icf
-X_train_tficf = np.zeros((len(vectorizer.get_feature_names()), X_train_counts.shape[1])
+	# Preallocate tf_icf
+	X_train_tficf = np.zeros((len(vectorizer.get_feature_names()), X_train_counts.shape[1]))
 
-# Calculating tf-icf
-for i in range(X_train_counts[1]):
-	freq = X_train_counts[:,i].toarray()
+	# Calculating tf-icf
+	for i in xrange(X_train_counts.shape[1]):
+		freq = X_train_counts[:,i].toarray()
+		for j in xrange(X_train_counts,shape[0]):
+			max_freq = max_term_freq[j]
+			len_cat = len(categories_20)
 
-	for j in range(X_train_counts[0]):
-		max_freq = max_term_freq[j]
-		len_cat = len(categories_20)
+			# Formula Porvided 
+			X_train_tficf[i][j] = ((0.5+(0.5*(freq/float(max_freq))))*math.log10(len_cat/float(1+cat_count[i])))
 
-		# Formula Porvided 
-		X_train_tficf[i][j] = ((0.5+(0.5*(freq/float(max_freq))))*math.log10(len_cat/float(1+cat_count[i])))
+	return X_train_tficf
 
+X_train_tficf = calculate_tficf();
 # Print out the 10 Signficant Terms for the Class
 # comp.sys.ibm.pc.hardware (index = 3), comp.sys.mac.hardware (index = 4), misc.forsale(index = 6), soc.religion.christian (index = 15)
 cat_index = [3, 4, 6, 15]

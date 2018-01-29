@@ -32,11 +32,12 @@ eight_test = fetch_20newsgroups(subset='test', categories=categories_8, shuffle=
 
 # Tokenize each document into words
 # Gets rid of stop words, and stemmed version of word
+# Ignores words appearing in less then 5 (or 2 if min_df = 2) documents 
 vectorizer = CountVectorizer(min_df=5, stop_words= stop_words, tokenizer=LemmaTokenizer() )
 X_train_counts = vectorizer.fit_transform(eight_train.data)
 X_test_counts = vectorizer.transform(eight_test.data)
 
-# TFIDF (NOT FINISHED)
+# TFIDF
 # We set smooth_idf = false so we use the equation idf(d, t) = log [ n / df(d, t) ] + 1
 tfidf_transformer = TfidfTransformer(smooth_idf=False)
 X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)

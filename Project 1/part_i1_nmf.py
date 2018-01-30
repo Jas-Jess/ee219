@@ -71,7 +71,7 @@ eight_test = fetch_20newsgroups(subset='test', categories=categories_8, shuffle=
 # Tokenize each document into words
 # Gets rid of stop words, and stemmed version of word
 # Ignores words appearing in less then 5 (or 2 if min_df = 2) documents 
-vectorizer = CountVectorizer(min_df=5, stop_words= stop_words, tokenizer=LemmaTokenizer() )
+vectorizer = CountVectorizer(min_df=2, stop_words= stop_words, tokenizer=LemmaTokenizer() )
 X_train_counts = vectorizer.fit_transform(eight_train.data)
 X_test_counts = vectorizer.transform(eight_test.data)
 
@@ -81,10 +81,10 @@ tfidf_transformer = TfidfTransformer(smooth_idf=False)
 X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
 X_test_tfidf = tfidf_transformer.transform(X_test_counts)
 
-# 'arpack' for the ARPACK wrapper in SciPy (scipy.sparse.linalg.svds)
-svd = TruncatedSVD(n_components=50, algorithm='arpack')
-X_train_lsi = svd.fit_transform(X_train_tfidf)
-X_test_lsi = svd.transform(X_test_tfidf)
+# NMF
+nmf = NMF(n_components=50, init='random', random_state=0)
+X_train_nmf = nmf.fit_transform(X_train_tfidf)
+X_test_nmf = nmf.transform(X_test_tfidf)
 
 # separate into two groups(Computer Tech & Recreation)
 train_target_group = [ int(x / 4) for x in eight_train.target]
@@ -99,15 +99,15 @@ l2_coeficients = []
 
 for param in params:
     l1_log_reg = LogisticRegression( penalty = 'l1', C = 10 ** param, solver = 'liblinear')
-    l1_log_reg.fit(X_train_lsi, train_target_group)
-    l1_predicted = l1_log_reg.predict(X_test_lsi)
+    l1_log_reg.fit(X_train_nmf, train_target_group)
+    l1_predicted = l1_log_reg.predict(X_test_nmf)
     l1_accuracies.append(100 - smet.accuracy_score(test_actual, l1_predicted) * 100)
     l1_coeficients.append(np.mean(l1_log_reg.coef_))
 
 
     l2_log_reg = LogisticRegression(penalty = 'l2', C = 10 ** param, solver = 'liblinear')
-    l2_log_reg.fit(X_train_lsi, train_target_group)
-    l2_predicted = l2_log_reg.predict(X_test_lsi)
+    l2_log_reg.fit(X_train_nmf, train_target_group)
+    l2_predicted = l2_log_reg.predict(X_test_nmf)
     l2_accuracies.append(100 - smet.accuracy_score(test_actual, l2_predicted) * 100)
     l2_coeficients.append(np.mean(l2_log_reg.coef_))
 
@@ -154,9 +154,9 @@ plt.show()
 
 # Plot Best ROC Graph
 l1_log_reg = LogisticRegression( penalty = 'l1', C = 10 ** param, solver = 'liblinear')
-l1_log_reg.fit(X_train_lsi, train_target_group)
-l1_predicted = l1_log_reg.predict(X_test_lsi)
-predicted_probs = l1_log_reg.predict_proba(X_test_lsi)
+l1_log_reg.fit(X_train_nmf, train_target_group)
+l1_predicted = l1_log_reg.predict(X_test_nmf)
+predicted_probs = l1_log_reg.predict_proba(X_test_nmf)
 fpr, tpr, _ = roc_curve(test_actual, predicted_probs[:,1])
 print "Best L1 fit "
 print_stats (test_actual, l1_predicted)
@@ -164,9 +164,9 @@ plot_roc(fpr, tpr)
 
 
 l2_log_reg = LogisticRegression(penalty = 'l2', C = 10 ** param, solver = 'liblinear')
-l2_log_reg.fit(X_train_lsi, train_target_group)
-l2_predicted = l2_log_reg.predict(X_test_lsi)
-predicted_probs = l2_log_reg.predict_proba(X_test_lsi)
+l2_log_reg.fit(X_train_nmf, train_target_group)
+l2_predicted = l2_log_reg.predict(X_test_nmf)
+predicted_probs = l2_log_reg.predict_proba(X_test_nmf)
 fpr, tpr, _ = roc_curve(test_actual, predicted_probs[:,1])
 print "Best L1 fit "
 print_stats (test_actual, l2_predicted)
